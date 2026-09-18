@@ -1,0 +1,6 @@
+{
+  "resolute2.sysml.libraryPaths": [],
+  "files.watcherExclude": {
+    "**/target/**": true
+  }
+}

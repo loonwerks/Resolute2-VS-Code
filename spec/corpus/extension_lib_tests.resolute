@@ -1,0 +1,27 @@
+goal run() <=
+** "running tests" **
+    let test_json : string = '{"name": "some_value", "type" : "MyType"}';
+    let test_string : string = "Hello world 'I am amongus'";
+    json_works(test_json) and strings_works(test_string) and shell_works() and
+    files_works()
+
+goal json_works(s : string) <=
+** "Do some JSON stuff" **
+    Json.getString(Json.toObject(Json.parse(s)), "name") = "some_value"
+
+goal strings_works(s:string) <=
+** "Do some String stuff" **
+    StringLib.contains(s, 'Hello')
+
+goal shell_works() <=
+** "Do some ShellCmd stuff" **
+    let result : ShellCmd.shell_return_type = ShellCmd.exec("echo hi");
+    debug(ShellCmd.get_return_code(result)) and 
+    debug(ShellCmd.get_output(result)) and
+    ShellCmd.get_return_code(result) = 0 and
+    ShellCmd.get_output(result) = "hi\n"
+
+goal files_works() <=
+** "" **
+    let read : string = FileAccess.getContents("./test.txt");
+    StringLib.contains(read, 'hello')

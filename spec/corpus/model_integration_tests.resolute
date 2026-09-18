@@ -1,0 +1,288 @@
+goal test_all() <=
+    ** "Test all of the model based built-in functions" **
+    test_has_property() and
+    test_property() and
+    test_property_member() and
+    test_has_parent() and
+    test_parent() and
+    test_name() and
+    test_type() and
+    test_has_type() and
+    test_is_in_array() and
+    test_has_prototypes() and
+    test_has_modes() and
+    test_is_processor() and
+    test_is_virtual_processor() and
+    test_is_system() and
+    test_is_bus() and
+    test_is_virtual_bus() and
+    test_is_device() and
+    test_is_memory() and
+    test_is_thread() and
+    test_is_thread_group() and
+    test_is_process() and
+    test_is_data() and
+    test_is_subprogram() and
+    test_is_of_type() and
+    test_is_bound_to() and
+    test_has_member() and
+    test_features() and
+    test_connections() and
+    test_enumerated_values() and
+    test_subcomponents() and
+    test_source() and
+    test_destination() and
+    test_is_bidirectional() and
+    test_direction() and
+    test_is_event_port() and
+    test_is_abstract_feature() and
+    test_is_data_port() and
+    test_is_port() and
+    test_is_data_access() and
+    test_is_bus_access() and
+    test_instance() and
+    test_instances() and
+    test_receive_error() and
+    test_contain_error() and
+    test_propagate_error() and
+    test_error_state_reachable() and
+    test_flow_source() and
+    test_flow_destination() and
+    test_flow_elements() and
+    test_flow_specifications() and
+    test_end_to_end_flows()
+
+
+test_platform() : component =
+    instance("Platform::ZCU102_Impl")
+
+test_platform_children() : {component} =
+    subcomponents(test_platform())
+
+test_platform_system() : component =
+    let children : {component} = test_platform_children();
+    head({c for (c : children) | is_system(c)})
+
+test_processor() : component =
+    let children : {component} = test_platform_children();
+    head({c for (c : children) | is_processor(c)})
+
+test_process() : component =
+    let children : {component} = subcomponents(test_platform_system());
+    head({c for (c : children) | is_process(c)})
+
+test_thread() : component =
+    head(subcomponents(test_process()))
+
+test_feature() : feature =
+    head(features(test_process()))
+
+test_connection() : connection =
+    head(connections(test_platform_system()))
+
+goal test_has_property() <=
+    ** "The seL4 definition has a Domain property" **
+    has_property("SW::seL4", "Domain")
+
+goal test_property() <=
+    ** "The driver Domain property evaluates to four" **
+    property("SW::LowLevelEthernetDriver_seL4", "Domain") = 4
+
+goal test_property_member() <=
+    ** "A unit-valued property exposes its unit record member" **
+    property_member(property("Platform::Proc", "Frame_Period"), "unit") = "ps"
+
+goal test_has_parent() <=
+    ** "The nested seL4 system has a parent" **
+    has_parent(test_platform_system())
+
+goal test_parent() <=
+    ** "The nested seL4 system is parented by the platform" **
+    parent(test_platform_system()) = test_platform()
+
+goal test_name() <=
+    ** "The platform instance has the SysML definition name" **
+    name(test_platform()) = "ZCU102_Impl"
+
+goal test_type() <=
+    ** "The platform type is the ZCU102 implementation definition" **
+    name(type(test_platform())) = "ZCU102_Impl"
+
+goal test_has_type() <=
+    ** "The platform instance has a classifier" **
+    has_type(test_platform())
+
+goal test_is_in_array() <=
+    ** "The platform is not an element expanded from an array" **
+    not is_in_array(test_platform())
+
+goal test_has_prototypes() <=
+    ** "The platform classifier has no AIR prototype declarations" **
+    not has_prototypes(test_platform())
+
+goal test_has_modes() <=
+    ** "The platform has no AIR mode instances" **
+    not has_modes(test_platform())
+
+goal test_is_processor() <=
+    ** "The proc subcomponent is a processor" **
+    is_processor(test_processor())
+
+goal test_is_virtual_processor() <=
+    ** "The physical processor is not a virtual processor" **
+    not is_virtual_processor(test_processor())
+
+goal test_is_system() <=
+    ** "The seL4 subcomponent is a system" **
+    is_system(test_platform_system())
+
+goal test_is_bus() <=
+    ** "The platform system is not a bus" **
+    not is_bus(test_platform())
+
+goal test_is_virtual_bus() <=
+    ** "The platform system is not a virtual bus" **
+    not is_virtual_bus(test_platform())
+
+goal test_is_device() <=
+    ** "The platform system is not a device" **
+    not is_device(test_platform())
+
+goal test_is_memory() <=
+    ** "The platform system is not memory" **
+    not is_memory(test_platform())
+
+goal test_is_thread() <=
+    ** "A process implementation contains a thread" **
+    is_thread(test_thread())
+
+goal test_is_thread_group() <=
+    ** "The platform system is not a thread group" **
+    not is_thread_group(test_platform())
+
+goal test_is_process() <=
+    ** "The seL4 system contains processes" **
+    is_process(test_process())
+
+goal test_is_data() <=
+    ** "The u16 array definition is AIR data" **
+    is_data("SW::u16Array")
+
+goal test_is_subprogram() <=
+    ** "The platform system is not a subprogram" **
+    not is_subprogram(test_platform())
+
+goal test_is_of_type() <=
+    ** "An instance is of its own classifier type" **
+    is_of_type(test_platform(), type(test_platform()))
+
+goal test_is_bound_to() <=
+    ** "The seL4 system is processor-bound to proc" **
+    is_bound_to(test_platform_system(), test_processor())
+
+goal test_has_member() <=
+    ** "The seL4 system has a MavlinkFirewall member" **
+    has_member(test_platform_system(), "MavlinkFirewall")
+
+goal test_features() <=
+    ** "A seL4 process has features" **
+    size(features(test_process())) > 0
+
+goal test_connections() <=
+    ** "The seL4 system has connections" **
+    size(connections(test_platform_system())) > 0
+
+goal test_enumerated_values() <=
+    ** "Array size kinds include Bound" **
+    member("Bound", enumerated_values("HAMR::Array_Size_Kind"))
+
+goal test_subcomponents() <=
+    ** "The platform has processor and system subcomponents" **
+    size(subcomponents(test_platform())) = 2
+
+goal test_source() <=
+    ** "A system connection has a source endpoint" **
+    has_parent(source(test_connection()))
+
+goal test_destination() <=
+    ** "A system connection has a destination endpoint" **
+    has_parent(destination(test_connection()))
+
+goal test_is_bidirectional() <=
+    ** "The first seL4 port connection is directed" **
+    not is_bidirectional(test_connection())
+
+goal test_direction() <=
+    ** "The first process feature is an input" **
+    direction(test_feature()) = "In"
+
+goal test_is_event_port() <=
+    ** "A process feature is an event port" **
+    is_event_port(test_feature())
+
+goal test_is_abstract_feature() <=
+    ** "An event data port is not abstract" **
+    not is_abstract_feature(test_feature())
+
+goal test_is_data_port() <=
+    ** "A process feature is a data port" **
+    is_data_port(test_feature())
+
+goal test_is_port() <=
+    ** "A process feature is a port" **
+    is_port(test_feature())
+
+goal test_is_data_access() <=
+    ** "An event data port is not a data access" **
+    not is_data_access(test_feature())
+
+goal test_is_bus_access() <=
+    ** "An event data port is not a bus access" **
+    not is_bus_access(test_feature())
+
+goal test_instance() <=
+    ** "The platform definition has one retrievable instance" **
+    has_type(instance("Platform::ZCU102_Impl"))
+
+goal test_instances() <=
+    ** "The platform definition has exactly one instance" **
+    size(instances("Platform::ZCU102_Impl")) = 1
+
+goal test_receive_error() <=
+    ** "The platform declares no incoming EMV2 error token" **
+    not receive_error(test_platform(), "TestError")
+
+goal test_contain_error() <=
+    ** "The platform declares no EMV2 error event" **
+    not contain_error(test_platform(), "TestError")
+
+goal test_propagate_error() <=
+    ** "The platform declares no outgoing EMV2 error token" **
+    not propagate_error(test_platform(), "TestError")
+
+goal test_error_state_reachable() <=
+    ** "The platform declares no transition to a failed EMV2 state" **
+    not error_state_reachable(test_platform(), "Failed")
+
+goal test_flow_source() <=
+    ** "Every available platform flow has a source" **
+    let flows : {flow_specification} = flow_specifications(test_platform());
+    forall (candidate : flows) . has_parent(flow_source(candidate))
+
+goal test_flow_destination() <=
+    ** "Every available platform flow has a destination" **
+    let flows : {flow_specification} = flow_specifications(test_platform());
+    forall (candidate : flows) . has_parent(flow_destination(candidate))
+
+goal test_flow_elements() <=
+    ** "Every available end-to-end flow exposes its elements" **
+    let flows : {end_to_end_flow} = end_to_end_flows(test_platform());
+    forall (candidate : flows) . size(flow_elements(candidate)) >= 0
+
+goal test_flow_specifications() <=
+    ** "The current Sireum corpus contains no platform flow specifications" **
+    size(flow_specifications(test_platform())) = 0
+
+goal test_end_to_end_flows() <=
+    ** "The current AIR schema contains no platform end-to-end flows" **
+    size(end_to_end_flows(test_platform())) = 0

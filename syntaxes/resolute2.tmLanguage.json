@@ -1,0 +1,56 @@
+{
+  "name": "resolute2",
+  "scopeName": "source.resolute2",
+  "fileTypes": [
+    ".resolute"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "name": "keyword.control.resolute2",
+      "match": "\\b(provides_subprogram_group_access|requires_subprogram_group_access|provides_subprogram_access|requires_subprogram_access|subprogram_group_access|error_state_reachable|is_virtual_processor|provides_data_access|requires_data_access|flow_specifications|is_abstract_feature|provides_bus_access|requires_bus_access|flow_specification|enumerated_values|subprogram_access|virtual_processor|end_to_end_flows|flow_destination|is_bidirectional|subprogram_group|end_to_end_flow|event_data_port|is_thread_group|propagate_error|property_member|has_prototypes|is_data_access|is_virtual_bus|contain_error|feature_group|flow_elements|is_bus_access|is_event_port|is_subprogram|justification|receive_error|subcomponents|has_property|is_data_port|is_processor|thread_group|connections|data_access|destination|flow_source|is_bound_to|is_in_array|lower_bound|undeveloped|upper_bound|virtual_bus|assumption|bus_access|connection|event_port|has_member|has_parent|instanceof|is_of_type|is_process|subprogram|component|data_port|direction|has_modes|instances|intersect|is_device|is_memory|is_system|is_thread|processor|abstract|analysis|features|has_type|instance|property|solution|strategy|andthen|as_list|context|feature|is_data|is_port|process|access|append|as_set|device|exists|forall|is_bus|length|member|memory|orelse|parent|record|source|string|system|thread|debug|false|range|union|aadl|bool|data|else|fail|goal|head|name|port|real|size|tail|then|true|type|and|bus|for|int|let|max|min|not|sum|if|or)\\b"
+    },
+    {
+      "name": "string.quoted.double.resolute2",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "include": "#string-character-escape"
+        }
+      ]
+    },
+    {
+      "name": "string.quoted.single.resolute2",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "include": "#string-character-escape"
+        }
+      ]
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "begin": "--",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.whitespace.comment.leading.resolute2"
+            }
+          },
+          "end": "(?=$)",
+          "name": "comment.line.resolute2"
+        }
+      ]
+    },
+    "string-character-escape": {
+      "name": "constant.character.escape.resolute2",
+      "match": "\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|u\\{[0-9A-Fa-f]+\\}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.|$)"
+    }
+  }
+}

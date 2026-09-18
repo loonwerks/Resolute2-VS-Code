@@ -1,0 +1,22 @@
+goal test() <=
+** "The" **
+	goal_with_subgoals(2)
+
+strategy test_strat (v : aadl) <=
+	** "another " v " one" **
+	undeveloped
+	
+test_constant : int = 1
+
+goal sub_goal1() <=
+	** "A derived requirement" **
+	1 + 1 >= 2
+	
+goal sub_goal2() <=
+	** "Another derived requirement" **
+	test_constant - test_constant = 0
+
+goal goal_with_subgoals (fst_var : int) <= 
+** "A high level requirement is described here" **
+	let test_let : int = 1;
+	fst_var + test_let > 2 and sub_goal1() and sub_goal2()

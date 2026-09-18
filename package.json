@@ -1,0 +1,142 @@
+{
+  "name": "resolute2-vscode",
+  "displayName": "Resolute2",
+  "description": "Resolute2 language support for VS Code.",
+  "version": "0.1.0",
+  "publisher": "barclata",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "main": "./dist/extension.cjs",
+  "activationEvents": [
+    "onLanguage:resolute2"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "Resolute2",
+      "properties": {
+        "resolute2.shellCmd.enabled": {
+          "type": "boolean",
+          "default": false,
+          "scope": "resource",
+          "description": "Allow ShellCmd.exec to start local processes when the workspace is trusted. Restart the Resolute2 language server after changing this setting."
+        },
+        "resolute2.fileAccess.enabled": {
+          "type": "boolean",
+          "default": false,
+          "scope": "resource",
+          "description": "Allow FileAccess to inspect and read files beneath trusted workspace roots. Restart the Resolute2 language server after changing this setting."
+        },
+        "resolute2.sireum.home": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "description": "Path to a local Sireum installation. SIREUM_HOME is used when this setting is empty."
+        },
+        "resolute2.sysml.libraryPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "resource",
+          "description": "Directories containing AADL-for-SysML library .sysml files."
+        }
+      }
+    },
+    "languages": [
+      {
+        "id": "resolute2",
+        "aliases": [
+          "Resolute2",
+          "resolute2"
+        ],
+        "extensions": [
+          ".resolute"
+        ],
+        "configuration": "./syntaxes/language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "resolute2",
+        "scopeName": "source.resolute2",
+        "path": "./syntaxes/resolute2.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "resolute2.restartServer",
+        "title": "Resolute2: Restart Language Server"
+      },
+      {
+        "command": "resolute2.evaluateGoal",
+        "title": "Resolute2: Evaluate Goal"
+      },
+      {
+        "command": "resolute2.openGoal",
+        "title": "Resolute2: Open Goal"
+      },
+      {
+        "command": "resolute2.refreshGoals",
+        "title": "Resolute2: Refresh Goals",
+        "icon": "$(refresh)"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "resolute2.goals",
+          "name": "Resolute2 Goals"
+        },
+        {
+          "id": "resolute2.assuranceCase",
+          "name": "Resolute2 Assurance Case"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "resolute2.refreshGoals",
+          "when": "view == resolute2.goals",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "resolute2.evaluateGoal",
+          "when": "view == resolute2.goals && viewItem == resoluteExecutableGoal",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "generate": "langium generate",
+    "build:bridge": "node scripts/build-sireum-bridge.mjs",
+    "check-types": "tsc --noEmit",
+    "build": "npm run generate && npm run check-types && node esbuild.mjs && npm run build:bridge",
+    "test": "npm run build && node --test dist/corpus.test.cjs dist/libraries.test.cjs dist/debug-logging.test.cjs dist/core-language.test.cjs dist/file-access.test.cjs dist/model-integration.test.cjs",
+    "check:support": "node scripts/check-support-matrix.mjs",
+    "vscode:prepublish": "npm run build",
+    "package": "npm run build && vsce package --out resolute2-vscode.vsix",
+    "test:sireum": "node --test dist/sireum-integration.test.cjs"
+  },
+  "dependencies": {
+    "langium": "4.4.0",
+    "vscode-languageclient": "10.1.0",
+    "vscode-languageserver": "10.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/vscode": "^1.100.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.25.0",
+    "langium-cli": "4.4.0",
+    "typescript": "^5.8.0"
+  },
+  "license": "UNLICENSED"
+}

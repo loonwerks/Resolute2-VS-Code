@@ -1,0 +1,10 @@
+{
+  "projectName": "Resolute2",
+  "languages": [{
+    "id": "resolute2",
+    "grammar": "src/language/resolute2.langium",
+    "fileExtensions": [".resolute"],
+    "textMate": { "out": "syntaxes/resolute2.tmLanguage.json" }
+  }],
+  "out": "src/language/generated"
+}

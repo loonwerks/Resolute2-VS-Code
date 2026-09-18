@@ -1,0 +1,22 @@
+goal top_impl_has_comps() <=
+	** "Everything works" **
+	let x : aadl = instance("Platform::ZCU102_Impl");
+	-- let x : aadl = instance("Platform::ZCU102_Impl.seL4"); -- this fails
+	let y : {aadl} = instances("SW::seL4");
+	let z : {aadl} = instances("SW::LowLevelEthernetDriver");
+	debug(x, "; ", y, "; ", z) and
+	system_has_property () and process_has_property()
+
+goal system_has_property() <=
+	** "A System element has a Domain property" **
+	has_property("SW::seL4", "Domain") 
+	
+goal process_has_property() <=
+	** "A Process element has a Domain property" **
+	has_property("SW::LowLevelEthernetDriver_seL4", "Domain") 
+	
+--goal components_exist(x:component) <=
+--	** "There is at least 2 components in the system" **
+--	let comps : {component} = subcomponents(x);
+--	let threds : {bool} = {has_property(c, MySysProp) for (c : comps)};
+--	true

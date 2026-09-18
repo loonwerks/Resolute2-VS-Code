@@ -1,0 +1,415 @@
+grammar com.collins.trustedmethods.resolute2.Resolute2 hidden(WS, SL_COMMENT)
+
+import "http://www.eclipse.org/emf/2002/Ecore" as ecore
+import "platform:/resource/com.collins.trustedmethods.resolute2.model/model/resolute.ecore" as resolute
+
+generate resolute2 "http://www.rockwellcollins.com/atc/resolute2/Resolute2"
+
+ResoluteToplevel returns resolute::Element:
+	{ResoluteToplevel} statements+=ResoluteStatement*
+;
+
+ResoluteStatement returns resolute::NamedElement:
+  Definition
+;
+
+// We need an ecore model of a NamedElement to replace aadl2::NamedElement | ID
+NamedElement returns resolute::NamedElement: 
+	Definition
+|	Arg
+|   LetBinding
+;
+
+Element returns resolute::Element: 
+	Expr
+|   ClaimText
+|   DefinitionBody
+|   Type
+;
+
+//ResoluteLibrary:
+//	{ResoluteLibrary}
+//	definitions+=Definition*
+//;
+//
+//ResoluteSubclause:
+//	{ResoluteSubclause}
+//	analyses+=AnalysisStatement*
+//;
+
+Definition:
+	ConstantDefinition 
+|	FunctionDefinition
+;
+
+ConstantDefinition:
+	name=ID ':' type=Type '=' expr=Expr
+;
+
+Type:
+	{ListType} '[' type=Type ']'
+|	{SetType} '{' type=Type '}'
+|	BaseType ('<' paramType=Type '>')?
+|	{LibraryFnType} libName=ID '.' fnType=ID
+;
+
+BaseType:
+	type=( 'int'
+         | 'real'
+         | 'string'
+         | 'bool'
+         | 'range'
+         | 'aadl'
+         | 'component'
+         | 'abstract'
+         | 'bus'
+         | 'data'
+         | 'device'
+         | 'memory'
+         | 'processor'
+         | 'process'
+         | 'subprogram_group'
+         | 'subprogram'
+         | 'system'
+         | 'thread_group'
+         | 'thread'
+         | 'virtual_bus'
+         | 'virtual_processor'
+         | 'connection'
+         | 'property'
+         | 'record'
+         | 'feature'
+         | 'port'
+         | 'data_port'
+         | 'event_port'
+         | 'event_data_port'
+         | 'feature_group'
+         | 'access'
+         | 'bus_access'
+         | 'provides_bus_access'
+         | 'requires_bus_access'
+         | 'data_access'
+         | 'provides_data_access'
+         | 'requires_data_access'
+         | 'subprogram_access'
+         | 'provides_subprogram_access'
+         | 'requires_subprogram_access'
+         | 'subprogram_group_access'
+         | 'provides_subprogram_group_access'
+         | 'requires_subprogram_group_access'
+         | 'flow_specification'
+         | 'end_to_end_flow'
+         );
+       
+FunctionDefinition:
+	(claimType=ClaimType)? name=ID '(' (args+=Arg (',' args+=Arg)*)? ')' body=DefinitionBody
+;
+
+ClaimType:
+	'goal'
+|	'strategy'
+;
+
+//Arg types are used for functions, claims, and quantifiers
+// TODO: Is the second clause necessary? We can just use a different syntax node for the quantifiers, right? QuantArg allows for things like x : 1 which means what?
+Arg returns Arg: 
+	=> (name=ID ':' type=Type)
+|	{QuantArg} name=ID ':' expr=Expr
+;
+
+DefinitionBody:
+	 {FunctionBody} ':' type=Type '=' expr=Expr
+|	 {ClaimBody} '<=' ('**'(claim+=ClaimText)+'**') (attributes+=ClaimAttribute)* expr=Expr
+;
+
+ClaimAttribute returns resolute::NamedElement:
+	ClaimContext
+|	ClaimJustification
+|	ClaimAssumption
+|	ClaimStrategy
+;
+
+ClaimText:
+	 {ClaimString} str=STRING 
+| 	 {ClaimArg} arg=[ClaimTextVar] //('%' unit=[UnitLiteral])?
+;
+
+ClaimTextVar: Arg | ConstantDefinition | LetBinding | ClaimContext | ClaimAssumption;
+
+ClaimContext:
+	'context' (name=ID)? ':' expr=Expr ';'
+;
+
+ClaimJustification:
+	'justification' (name=ID)? ':' val=StringTerm ';'
+;
+
+ClaimAssumption:
+	'assumption' (name=ID)? ':' expr=Expr ';'
+;
+
+ClaimStrategy:
+	'strategy' (name=ID)? ':' val=StringTerm ';' 
+;
+
+Expr:
+	ImpliesExpr
+;
+
+ImpliesExpr returns Expr:
+	OrExpr (=>({BinaryExpr.left=current} op='=>') right=ImpliesExpr)?
+;
+
+OrExpr returns Expr:
+	AndExpr (=>({BinaryExpr.left=current} (op='or'|op='orelse')) right=AndExpr)*
+;
+
+AndExpr returns Expr:
+	InstanceOfExpr (=>({BinaryExpr.left=current} (op='and'|op='andthen')) right=InstanceOfExpr)*
+;
+
+InstanceOfExpr returns Expr:
+	RelationalExpr (=>({InstanceOfExpr.expr=current} 'instanceof') type=BaseType)?
+;
+
+RelationalOp:
+	'<' | '<=' | '>' | '>=' | '=' | '<>'
+;
+ 
+RelationalExpr returns Expr:
+	PlusExpr (=>({BinaryExpr.left=current} op=RelationalOp) right=PlusExpr)?
+;
+
+PlusExpr returns Expr:
+	TimesExpr (=>({BinaryExpr.left=current} op=('+' | '-')) right=TimesExpr)*
+;
+
+TimesExpr returns Expr:
+	ExpExpr (=>({BinaryExpr.left=current} op=('*' | '/' | '%')) right=ExpExpr)*	
+;
+
+ExpExpr returns Expr:
+	PrefixExpr (=>({BinaryExpr.left=current} op=('^')) right=PrefixExpr)*
+;
+
+PrefixExpr returns Expr:
+	{UnaryExpr} op=('-' | 'not') expr=PrefixExpr
+|   {CastExpr} '(' type=BaseType ')' expr=PrefixExpr
+|	AtomicExpr
+;
+
+AtomicExpr returns Expr:
+	{IdExpr} id=[resolute::NamedElement | QCREF]
+//|	{ThisExpr} 'this' ('.' sub=NestedDotID)? //removed because we're doing away with component annexes
+|   {FailExpr} 'fail' ( val=Expr | ( '**' (failmsg+=ClaimText)+  '**')) 
+|	{IntExpr} val=IntegerTerm
+|   {RealExpr} val=RealTerm
+|	{BoolExpr} val=BooleanLiteral
+|   {StringExpr} val=StringTerm
+|	{IfThenElseExpr} 'if' cond=Expr 'then' then=Expr 'else' else=Expr
+|   {QuantifiedExpr} quant=('forall' | 'exists') ('(' args+=Arg ')')+ '.' expr=Expr
+|	=> ({LibraryFnCallExpr} libName=ID '.' fnName=ID '(' (args+=(Expr) (',' args+=(Expr))*)? ')')
+|   {BuiltInFnCallExpr} fn=BuiltInFn '(' (args+=(Expr) (',' args+=(Expr))*)? ')'
+|	{FnCallExpr} fn=[FunctionDefinition] '(' (args+=(Expr) (',' args+=(Expr))*)? ')'
+|   '[' Expr ( ({ListFilterMapExpr.map=current} 'for' ('(' args+=Arg ')')+ ('|' filter=Expr)?)
+             | ({ListExpr.exprs+=current} (',' exprs+=Expr)*)) ']'
+|   '{' Expr ( ({SetFilterMapExpr.map=current} 'for' ('(' args+=Arg ')')+ ('|' filter=Expr)?)
+             | ({SetExpr.exprs+=current} (',' exprs+=Expr)*)) '}'
+|   {ListExpr} '[' ']'
+|   {SetExpr} '{' '}'
+|   {LetExpr} 'let' binding=LetBinding ';' expr=Expr
+|	'(' Expr ')'
+
+| {UndevelopedExpr} 'undeveloped' 
+| {SolutionExpr} 'solution' name=ID ':' val=StringTerm 
+;
+
+BooleanLiteral:
+  {BooleanLiteral}(value?='true'|'false')
+;
+  
+LetBinding:
+	name=ID ':' type=Type '=' expr=Expr
+;
+
+BuiltInFn:
+// Primary type: aadl
+	'has_property'
+|	'property'
+|	'property_member'
+|	'has_parent'
+|	'parent'
+|	'name'
+|	'type'
+|	'has_type'
+|	'is_in_array'
+|	'has_prototypes'
+|	'has_modes'
+
+|	'is_processor'
+|	'is_virtual_processor'
+|	'is_system'
+|	'is_bus'
+|	'is_virtual_bus'
+|	'is_device'
+|	'is_memory'
+|	'is_thread'
+|	'is_thread_group'
+|	'is_process'
+|	'is_data'
+
+|	'is_subprogram'
+|   'is_of_type'
+|   'is_bound_to'
+|	'has_member'
+|   'features'
+|	'connections'
+
+// Primary type: property
+|   'enumerated_values'
+
+// Primary type: component
+|	'subcomponents'
+
+// Primary type: connection
+|	'source'
+|	'destination'
+|	'is_bidirectional'
+
+// Primary type: feature
+|	'direction'
+|	'is_event_port'
+|	'is_abstract_feature'
+|	'is_data_port'
+|	'is_port'
+|	'is_data_access'
+|	'is_bus_access'
+
+// Primary type: range
+|	'lower_bound'
+|	'upper_bound'
+
+// Primary type: set or list
+|	'member'
+|   'length'
+| 	'size'
+
+// Primary type: list
+|	'sum'
+|	'min'
+|	'max'
+|	'append'
+|	'head'
+|	'tail'
+|	'as_set'
+
+// Primary type: set
+|	'union'
+|	'intersect'
+|	'as_list'
+
+// Other
+|	'instance'
+|	'instances'
+|	'debug'
+|	'analysis'
+
+// Error Annex
+|	'receive_error'           // the component can receive an incoming error
+|	'contain_error'           // the component contain the error
+|	'propagate_error'         // the component propagate an error
+|   'error_state_reachable'   // the error state is reachable
+
+|   'flow_source'
+|   'flow_destination'
+|   'flow_elements'
+|   'flow_specifications'
+|   'end_to_end_flows'
+;
+
+RealTerm:
+	value=UnsignedReal //(unit=UnitLiteral)?
+;
+
+UnsignedReal returns ecore::EDouble:
+	REAL_LIT
+;
+
+IntegerTerm:
+	value=UnsignedInt //(unit=UnitLiteral)?
+;
+
+UnsignedInt returns ecore::ELong:
+	INTEGER_LIT
+;
+
+NestedDotID:
+	base=[resolute::NamedElement | ID] ('.' sub=NestedDotID)?
+;
+
+//UnitLiteral:
+//	name=ID;
+
+////// END RESOLUTE
+terminal fragment
+EXPONENT  :  ('e'|'E') ('+'|'-')? ( DIGIT )+  ;
+
+terminal fragment
+INT_EXPONENT :  ('e'|'E') ('+')? ( DIGIT )+ ;
+
+
+terminal REAL_LIT : 	
+	(DIGIT)+('_' (DIGIT)+)* ( '.' (DIGIT)+('_' (DIGIT)+)* ( EXPONENT )?)
+  ;
+
+terminal INTEGER_LIT : 
+		(DIGIT)+('_' (DIGIT)+)*
+		(( '#' BASED_INTEGER  '#' ( INT_EXPONENT )? )
+			| (INT_EXPONENT)?
+		)
+  ;
+
+terminal fragment
+DIGIT     :  ( '0'..'9' ) ;
+
+terminal fragment
+EXTENDED_DIGIT     :  ( '0'..'9' | 'a'..'f' | 'A'..'F') ;
+
+terminal fragment
+BASED_INTEGER      :  ( EXTENDED_DIGIT ) ( ('_')? EXTENDED_DIGIT )* ;
+
+QCLREF:
+	ID '::' ID;
+
+
+QPREF:
+	ID ('::' ID)?;
+
+QCREF:
+	(ID '::')* ID ('.' ID)?;
+	
+terminal STRING	: 
+	'"' ( '\\' ('b'|'t'|'n'|'f'|'r'|'u'|'"'|"'"|'\\') | !('\\'|'"') )* '"' |
+	"'" ( '\\' ('b'|'t'|'n'|'f'|'r'|'u'|'"'|"'"|'\\') | !('\\'|"'") )* "'"; 
+
+//terminal ID  		: '^'?('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'_'|'0'..'9')*;
+terminal ID:('a'..'z'
+        |'A'..'Z'
+       ) ( ('_')? ('a'..'z'
+        |'A'..'Z'
+        |'0'..'9'))*;
+	
+
+terminal WS : (' '|'\t'|'\r'|'\n')+;
+
+	
+terminal SL_COMMENT:
+	'--' !('\n' | '\r')* ('\r'? '\n')?
+;
+ 
+StringTerm:
+	value=NoQuoteString ;
+
+NoQuoteString:
+	// remove quotes from string in ValueConverter
+	STRING;

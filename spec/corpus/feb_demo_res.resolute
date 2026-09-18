@@ -1,0 +1,106 @@
+goal component_contracts_satisfied() <=
+	** "Component Contracts are satisfied" **
+	let appraisal_summary : string = attest();
+	if appraisal_summary = "" then false else argue_over_components(Json.toObject(Json.parse(appraisal_summary)))
+			
+strategy argue_over_components(appraisal_summary : Json.Json_Object) <=
+	** "Argue over each component" **
+	let components : {string} = get_components(appraisal_summary);
+	summary_is_wellformed(appraisal_summary) and
+	forall (comp : components) . contracts_satisfied(appraisal_summary, comp)
+
+goal contracts_satisfied(appraisal_summary : Json.Json_Object, comp : string) <=
+	** comp " contracts satisfied" **
+	let contracts : {Json.Json_Object} = get_contracts(appraisal_summary, comp);
+	forall (contract : contracts) .
+		if StringLib.contains(Json.getString(contract, "location"), ".sysml") then
+			-- Architecture contract has not been altered
+			architecture_contract_not_altered(Json.getString(contract, "contract_id"), contract) and
+			-- Logika was run and passes
+			architecture_contract_verified(Json.getString(contract, "contract_id"), contract)
+		else if StringLib.contains(Json.getString(contract, "location"), ".rs") then
+			-- Verus contract was generated 
+			software_contract_generated(Json.getString(contract, "contract_id")) and
+			-- Verus contract has not been altered
+			software_contract_not_altered(Json.getString(contract, "contract_id"), contract) and
+			-- Verus was run and passes
+			software_contract_verified(Json.getString(contract, "contract_id"), contract)
+		else true
+	
+goal architecture_contract_not_altered(id : string, contract : Json.Json_Object) <=
+	** "Model contract " id " not altered" **
+	get_result(contract, "Model")
+
+goal architecture_contract_verified(id : string, contract : Json.Json_Object) <=
+	** "Model contract " id " verified" **
+	true
+	
+goal software_contract_generated(id : string) <=
+	** "Software contract " id " was generated" **
+	true
+	
+goal software_contract_not_altered(id : string, contract : Json.Json_Object) <=
+	** "Software contract " id " not altered" **
+	get_result(contract, "Verus")
+	
+goal software_contract_verified(id : string, contract : Json.Json_Object) <=
+	** "Software contract " id " verified" **
+	true		
+
+goal summary_is_wellformed(obj : Json.Json_Object) <=
+	** "The attestation summary is well-formed" **
+	true
+	
+attest() : string =
+	"{
+		'PAYLOAD':  [
+	               		{
+							'component': 'Producer', 
+							'contract_id': 'id_1', 
+							'location': 'place.sysml',
+							'result' : true
+				  		}, 
+	              		{
+				   			'component': 'Consumer', 
+				   			'contract_id' : 'id_2', 
+				   			'location': 'place.sysml',
+				   			'result' : true
+				  		}
+					]
+	 }"
+	-- let get_project_dir : ShellCmd.Shell_Return_Type = ShellCmd.exec("printenv ASSURANCE_CASE_ROOT");
+	-- let project_dir : string = StringLib.trim(ShellCmd.get_output(get_project_dir)) + "/";
+--			let a : bool = debug("ASSURANCE_CASE_ROOT = ", project_dir);
+-- 	let run_script_path : string = project_dir + "run_rodeo.sh";
+-- 	let app_summ_path : string = project_dir + "appsumm_response.json";
+-- 	let run_command : string = "bash " + run_script_path + " " + project_dir;
+-- --			let b : bool = debug("run command = ", run_command);
+-- 	let result : ShellCmd.Shell_Return_Type = ShellCmd.exec(run_command);
+-- --			let d : bool = debug("return clode: ", ShellCmd.get_return_code(result));
+-- --			let e : bool = debug("output: ", ShellCmd.get_output(result));
+-- 	if ShellCmd.get_return_code(result) = 0 then get_appraisal_summary(app_summ_path) else ""
+
+get_result(contract : Json.Json_Object, kind : string) : bool =
+	Json.getBoolean(contract, "result")
+
+get_appraisal_summary(path : string) : string =
+	FileAccess.getContents(path)
+	
+get_components(appraisal_summary : Json.Json_Object) : {string} = 
+	let payload : Json.Json_Array = Json.getArray(appraisal_summary, "PAYLOAD");
+	{Json.getString(Json.toObject(c), "component") for (c : payload)}
+	
+get_contracts(appraisal_summary : Json.Json_Object, comp : string) : {Json.Json_Object} = 
+	let payload : Json.Json_Array = Json.getArray(appraisal_summary, "PAYLOAD");
+	{simplify_contract(Json.toObject(c)) for (c : payload) | Json.getString(Json.toObject(c), "component") = comp}
+	
+simplify_contract(contract : Json.Json_Object) : Json.Json_Object =
+	let loc : string = if StringLib.contains(Json.getString(contract, "location"), ".sysml") then ".sysml" 
+		else if StringLib.contains(Json.getString(contract, "location"), ".rs") then ".rs" 
+		else "";
+	let c : string = "{'component': '" + Json.getString(contract, "component") + "','contract_id': '" + 
+					 Json.getString(contract, "contract_id") + "','location': '" + loc + "','result': " + 
+					 (if Json.getBoolean(contract, "result") then "true" else "false") + "}";
+	Json.toObject(Json.parse(c))
+						
+			
