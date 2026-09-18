@@ -32,7 +32,7 @@ Library paths are searched recursively for `.sysml` files. `${workspaceFolder}` 
 
 ## Development
 
-Developed against Node.js 24.18.1
+Developed against Node.js 24.21.1
 
 ```bash
 npm install
